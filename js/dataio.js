@@ -54,3 +54,22 @@ function writeServer(data){
       });
 }
 
+function writeVidServer(data){
+  debugLog('initiate server video write');
+  $.ajax({
+      dataType: 'webm',
+      type: 'POST',
+      url: expt.saveVideoURL,
+      data: { data: data},
+        success: function(data){
+          debugLog('success saving data!');
+        },
+        error:function(xhr, status, error){
+          debugLog('failure saving data');
+          debugLog(xhr.responseText);
+          debugLog(status);
+          debugLog(error);
+        }
+      });
+}
+

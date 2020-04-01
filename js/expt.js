@@ -1,5 +1,6 @@
 var expt = { //add conditions here
     saveURL: 'submit.simple.php',
+    saveVideoURL: 'submit.video.php',
     totalTrials: 2, //adjust to how many trials you have
     initFullscreen: window.fullscreen,
     debug: true //set to false when ready to run
@@ -13,7 +14,7 @@ var trial = {
 }
 var client = parseClient();
 var trialData = []; //store all data in json format
-
+var vidData = [];
 
 
 function pageLoad(){
@@ -67,11 +68,13 @@ function clickContWindow(){
 function clickContCamera(){
     document.getElementById('camera').style.display = 'none';
     document.getElementById('video').style.display = 'block';
+    $('#replay')[0].play();
 }
 
 function clickContVideo(){
     document.getElementById('video').style.display = 'none';
-    document.getElementById('microphone').style.display = 'block';
+    //document.getElementById('microphone').style.display = 'block';
+    trialStart();
 }
 
 
@@ -216,31 +219,29 @@ function wait(delayInMS) {
   return new Promise(resolve => setTimeout(resolve, delayInMS));
 }
 
-var data = [];
-var chunks = [];
 function startRecording(stream, lengthInMS) {
   let recorder = new MediaRecorder(stream);
-  console.log(recorder)
+  let vid_data=[];
  
-  recorder.ondataavailable = event => data.push(event.data);
+  recorder.ondataavailable = event => vid_data.push(event.data);
   
   recorder.start();
-  //log(recorder.state + " for " + (lengthInMS/60000) + " minutes...");
+  //console.log(recorder.state + " for " + (lengthInMS/1000) + " seconds...");
  
   let stopped = new Promise((resolve, reject) => {
     recorder.onstop = resolve;
     recorder.onerror = event => reject(event.name);
   });
 
-  let recorded = wait(lengthInMS).then(
-    () => recorder.state == "recording" && recorder.stop()
-  );
- 
-  return Promise.all([
+  let recorded = wait(lengthInMS).then(() => {
+    recorder.state == "recording" && recorder.stop();
+  });
+  
+  return(Promise.all([
     stopped,
     recorded
   ])
-  .then(() => data);
+  .then(() => vid_data));
 }
 
 
@@ -248,54 +249,28 @@ function turnOnCamera(){
     if(!hasGetUserMedia()){
         alert('getUserMedia() is not supported by your browser.')
     } else{
-        const recordingTimeMS = 2000 //max recording is 1 hr
+        const recordingTimeMS = 5000 //max recording is 1 hr
         var constraints = {video:true, audio:true};
         var preview = document.querySelector('.videostream');
-        var recording = document.querySelector('#recording');
-        //const downloadButton = document.querySelector('#downloading');
         navigator.mediaDevices.getUserMedia(constraints).
         then(stream => {
-            console.log("part1");
             preview.srcObject = stream;
-            $('#downloading').attr('href', stream);
             preview.captureStream = preview.captureStream || preview.mozCaptureStream;
             return new Promise(resolve => preview.onplaying = resolve);
         }).
-        then(() => {
-            startRecording(preview.captureStream(), recordingTimeMS);
-            console.log("part2");
-        }).
+        then(() => startRecording(preview.captureStream(), recordingTimeMS)).
         then(recordedChunks => {
-            console.log("part3");
             let recordedBlob = new Blob(recordedChunks, {type: "video/webm"});
-            $('#downloading').attr('href', URL.createObjectURL(recordedBlob));
-            $('#downloading').download = "RecordedVideo.webm";
-
-            console.log("Successfully recorded " + recordedBlob.size + " bytes of " +
-                recordedBlob.type + " media.");
+            vidData = URL.createObjectURL(recordedBlob);
+            //writeVidServer(vidData);
+            $('#replay').attr('src',vidData);
+            $('#downloading').attr({
+                'href':vidData,
+                'download':client.sid+".webm"
+            })
         });
     }
 }
-
-function getCameraStream() {
-  if (window.stream) {
-    window.stream.getTracks().forEach(function(track) {
-      track.stop();
-    });
-  }
-  navigator.mediaDevices.getUserMedia(constraints).
-    then(gotStream).catch(handleError);
-}
-
-function gotCameraStream(stream) {
-  window.stream = stream; // make stream available to console
-  //videoElement.srcObject = stream;
-}
-
-function handleError(error) {
-  console.error('Error: ', error);
-}
-
 
 
 function turnOffCamera(stream){
@@ -315,13 +290,41 @@ function clickCamera(){
     }
 }
 
-function turnOnMicrophone(){
+function downloadVideo(){
 
+}
+
+
+    ////////////////////////////
+   //////// Microphone ////////
+  ////////////////////////////
+
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+var audiotRecorder = null;
+
+function turnOnMicrophone(){
+    var constraints = {audio:true};
+    var preview = document.querySelector('.videostream');
+    var recording = document.querySelector('#recording');
+    navigator.mediaDevices.getUserMedia(constraints).
+    then(stream => {
+        //put something here
+    })
 }
 
 function turnOffMicrophone(){
 
 }
+
+// function saveAudio(){
+//     audioRecorder.exportWAV(doneEncoding);
+
+//     function doneEncoding( blob ) {
+//         Recorder.setupDownload( blob, "myRecording" + ((recIndex<10)?"0":"") + recIndex + ".wav" );
+//         recIndex++;
+//     }
+
+// }
 
 
 function shuffle(array){ //shuffle list of objects
