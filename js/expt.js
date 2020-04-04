@@ -118,10 +118,10 @@ function trialDone(){
 function recordData(){
     // record what the subject did in json format
     trialData.push({
-        trialNumber:    trial.number,
-        trialTime:      trial.totalTime,
-        startTime:      trial.startTime,
-        endTime:        trial.endTime
+        trialNumber: trial.number,
+        trialTime: trial.totalTime,
+        startTime: trial.startTime,
+        endTime: trial.endTime
     });
 }
 
@@ -244,12 +244,11 @@ function startRecording(stream, lengthInMS) {
   .then(() => vid_data));
 }
 
-
 function turnOnCamera(){
     if(!hasGetUserMedia()){
         alert('getUserMedia() is not supported by your browser.')
     } else{
-        const recordingTimeMS = 5000 //max recording is 1 hr
+        const recordingTimeMS = 5000 //max recording is 20 mins
         var constraints = {video:true, audio:true};
         var preview = document.querySelector('.videostream');
         navigator.mediaDevices.getUserMedia(constraints).
@@ -260,14 +259,20 @@ function turnOnCamera(){
         }).
         then(() => startRecording(preview.captureStream(), recordingTimeMS)).
         then(recordedChunks => {
-            let recordedBlob = new Blob(recordedChunks, {type: "video/webm"});
+            var recordedBlob = new Blob(recordedChunks, {type: "video/webm"});
             vidData = URL.createObjectURL(recordedBlob);
-            //writeVidServer(vidData);
+            
             $('#replay').attr('src',vidData);
             $('#downloading').attr({
                 'href':vidData,
                 'download':client.sid+".webm"
             })
+            
+            //saves video file as form data
+            var formdata = new FormData();
+            formdata.append('name', client.sid);
+            formdata.append('file', recordedBlob);
+            writeVidServer(formdata);
         });
     }
 }
