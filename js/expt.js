@@ -1,9 +1,10 @@
 var expt = { //add conditions here
     saveURL: 'submit.simple.php',
     saveVideoURL: 'submit.video.php',
+    saveImgURL: 'save.image.php'
     totalTrials: 2, //adjust to how many trials you have
     initFullscreen: window.fullscreen,
-    debug: true //set to false when ready to run
+    debug: false //set to false when ready to run
 };
 
 var trial = {
@@ -34,30 +35,7 @@ function clickContConsent(){
     checkWindowDimensionsDynamic();
 }
 
-function clickFullscreen(){
-    if($('#fullscreenButton').attr('value') == 'off'){
-        var winFull = document.documentElement; // Make the browser window full screen.
-        openFullscreen(winFull);
-        $('#fullscreenButton').html('Exit<br>full screen mode');
-        $('#fullscreenButton').attr('value', 'on');
-        $('#fullscreenButton').css({'border-color':'red', 'background-color':'red'});
-        $('#fullscreenButton').hover(function(){
-            $(this).css('background-color','red');
-        }, function(){
-            $(this).css('background-color', 'white');
-        })
-    } else{
-        closeFullscreen();
-        $('#fullscreenButton').html('Enter<br>full screen mode');
-        $('#fullscreenButton').attr('value', 'off');
-        $('#fullscreenButton').css({'border-color':'#4CAF50', 'background-color':'#4CAF50',});
-        $('#fullscreenButton').hover(function(){
-            $(this).css('background-color','#4CAF50');
-        }, function(){
-            $(this).css('background-color', 'white');
-        })
-    }
-}
+
 
 function clickContWindow(){
     document.getElementById('window').style.display = 'none';
@@ -88,6 +66,8 @@ function trialStart(){
     //$('#next').attr('disabled',true);
     $('#round').html('Round ' + trial.number + " of " + expt.totalTrials);
     trial.startTime = new Date().getTime(); //reset start of trial time
+    //function here of experiment
+    
 }
 
 function trialDone(){
@@ -134,170 +114,12 @@ function experimentDone(){
 
 
 
-// Miscellaneous helper functions //
-
-// (function() {
-//   window.onresize = displayWindowSize;
-//   //window.onload = displayWindowSize;
-
-//   function displayWindowSize() {
-//     let myWidth = window.innerWidth;
-//     let myHeight = window.innerHeight;
-//     // your size calculation code here
-//     console.log(myWidth + " x " + myHeight)
-//   };
 
 
-// })();
-
-function checkWindowDimensionsDynamic() {
-    function displayWindowSize() {
-        let dynWidth = $(window).width();
-        let dynHeight = $(window).height();
-        $("#windowText").html("Screen is " + dynWidth + " x " + dynHeight);
-    };
-    
-    window.onresize = displayWindowSize;
-    window.onload = displayWindowSize();
-    
-}
 
 
-function checkWindowDimensions(minWidthPercent, minHeightPercent){ //dynamically check if dimensions are larger than specified percentages of max screen
-    // minWidth: percent of width converted to magnitude
-    // for my computer full screen is 83% of screen width
-    minWidth = minWidthPercent * screen.width;
-
-    // minHeight: percent of height converted to magnitude
-    // for my computer full screen is 91% of screen height
-    minHeight = minHeightPercent * screen.height;
-
-    if($(window).width() >= minWidth && $(window).height() >= minHeight){
-        return true;
-    } else{
-        warningMessage = ""; // if window size isn't large enough, warn client
-        if($(window).width() < minWidth){
-            warningMessage = warningMessage + "Please expand your screen width.\n"
-        }
-        if($(window).height() < minHeight){
-            warningMessage = warningMessage + "Please expand your screen height.\n"
-        }
-        alert(warningMessage);
-        return false;
-    }
-}
-
-function openFullscreen(elem) {
-  if (elem.requestFullscreen) {
-    elem.requestFullscreen();
-  } else if (elem.mozRequestFullScreen) { /* Firefox */
-    elem.mozRequestFullScreen();
-  } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
-    elem.webkitRequestFullscreen();
-  } else if (elem.msRequestFullscreen) { /* IE/Edge */
-    elem.msRequestFullscreen();
-  }
-}
-
-function closeFullscreen() {
-  if (document.exitFullscreen) {
-    document.exitFullscreen();
-  } else if (document.mozCancelFullScreen) { /* Firefox */
-    document.mozCancelFullScreen();
-  } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
-    document.webkitExitFullscreen();
-  } else if (document.msExitFullscreen) { /* IE/Edge */
-    document.msExitFullscreen();
-  }
-}
-
-function hasGetUserMedia() {
-    return(!!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
-}
-
-function wait(delayInMS) {
-  return new Promise(resolve => setTimeout(resolve, delayInMS));
-}
-
-function startRecording(stream, lengthInMS) {
-  let recorder = new MediaRecorder(stream);
-  let vid_data=[];
- 
-  recorder.ondataavailable = event => vid_data.push(event.data);
-  
-  recorder.start();
-  //console.log(recorder.state + " for " + (lengthInMS/1000) + " seconds...");
- 
-  let stopped = new Promise((resolve, reject) => {
-    recorder.onstop = resolve;
-    recorder.onerror = event => reject(event.name);
-  });
-
-  let recorded = wait(lengthInMS).then(() => {
-    recorder.state == "recording" && recorder.stop();
-  });
-  
-  return(Promise.all([
-    stopped,
-    recorded
-  ])
-  .then(() => vid_data));
-}
-
-function turnOnCamera(){
-    if(!hasGetUserMedia()){
-        alert('getUserMedia() is not supported by your browser.')
-    } else{
-        const recordingTimeMS = 5000 //max recording is 20 mins
-        var constraints = {video:true, audio:true};
-        var preview = document.querySelector('.videostream');
-        navigator.mediaDevices.getUserMedia(constraints).
-        then(stream => {
-            preview.srcObject = stream;
-            preview.captureStream = preview.captureStream || preview.mozCaptureStream;
-            return new Promise(resolve => preview.onplaying = resolve);
-        }).
-        then(() => startRecording(preview.captureStream(), recordingTimeMS)).
-        then(recordedChunks => {
-            var recordedBlob = new Blob(recordedChunks, {type: "video/webm"});
-            vidData = URL.createObjectURL(recordedBlob);
-            
-            $('#replay').attr('src',vidData);
-            $('#downloading').attr({
-                'href':vidData,
-                'download':client.sid+".webm"
-            })
-            
-            //saves video file as form data
-            var formdata = new FormData();
-            formdata.append('name', client.sid);
-            formdata.append('file', recordedBlob);
-            writeVidServer(formdata);
-        });
-    }
-}
 
 
-function turnOffCamera(stream){
-    var preview = document.querySelector('.videostream');
-    preview.srcObject.getTracks().forEach(track => track.stop());
-}
-
-function clickCamera(){
-    if($('#captureButton').attr('value') == 'off'){
-        turnOnCamera();
-        $('#captureButton').attr('value','on');
-        $('#captureButton').html('Turn off camera');
-    } else{
-        turnOffCamera();
-        $('#captureButton').attr('value','off');
-        $('#captureButton').html('Turn on camera');
-    }
-}
-
-function downloadVideo(){
-
-}
 
 
     ////////////////////////////
