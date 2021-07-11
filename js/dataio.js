@@ -36,12 +36,14 @@ function readServer(request){
 }            
 
 function writeServer(data){
-  debugLog('initiate server write');
+    debugLog('initiate server write');
   $.ajax({
       dataType: 'json',
       type: 'POST',
-      url: expt.saveURL,
-      data: { data: JSON.stringify(data)},
+      url: saveInfo.dataURL,
+      data: { data: JSON.stringify(data), 
+            experimenter: saveInfo.experimenter,
+            experimentName: saveInfo.experimentName},
         success: function(data){
           debugLog('success saving data!');
         },
@@ -54,12 +56,25 @@ function writeServer(data){
       });
 }
 
+function writeImgServer(data){
+  $.ajax({
+    type: "POST",
+    url: saveInfo.imgURL,
+    data: { img: data, 
+            name: client.sid,
+            experimenter: saveInfo.experimenter,
+            experimentName: saveInfo.experimentName},
+  }).done(function(o) {
+     console.log('saved'); 
+ })
+}
+
 function writeVidServer(data){
   debugLog('initiate server video write');
   $.ajax({
       type: 'POST',
       url: expt.saveVideoURL,
-      data: data,
+      data: { data },
       contentType: false,
       processData: false,
         success: function(data, recorded){
@@ -74,3 +89,24 @@ function writeVidServer(data){
       });
 }
 
+// function writeVidServer(data){
+//   debugLog('initiate server video write');
+//   $.ajax({
+//       type: 'POST',
+//       url: expt.saveVideoURL,
+//       data: { data: data,
+//               experimenter: saveInfo.experimenter,
+//               experimentName: saveInfo.experimentName },
+//       contentType: false,
+//       processData: false,
+//         success: function(data, recorded){
+//           debugLog('success saving data!');
+//         },
+//         error:function(xhr, status, error){
+//           debugLog('failure saving data');
+//           debugLog(xhr.responseText);
+//           debugLog(status);
+//           debugLog(error);
+//         }
+//       });
+// }
